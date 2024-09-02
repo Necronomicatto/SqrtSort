@@ -3,67 +3,92 @@
 #include <math.h>
 #include <time.h>
 
-
-void gen_random_numbers(int *arr, int size, int min, int max){
-    for (int i =0; i < size; i++){
+// Function to generate random numbers in the array
+void gen_random_numbers(int *arr, int size, int min, int max) {
+    for (int i = 0; i < size; i++) {
         arr[i] = rand() % (max - min + 1) + min;
     }
 }
 
-void bubbleSort(int arr[], int n) {
-  int i, j, temp;
-  for (i = 0; i < n - 1; i++) {
-    for (j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        temp = arr[j];
-        arr[j] = arr[j + 1];
-        arr[j + 1] = temp;
-      }
+// Insertion sort for sorting parts
+void insertionSort(int arr[], int n) {
+    for (int i = 1; i < n; i++) {
+        int key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
     }
-  }
 }
 
+// SqrtSort algorithm
 void sqrtsort(int arr[], int n) {
     int part_size = (int)sqrt(n);
-    int parts = n / part_size;
+    int num_parts = (n + part_size - 1) / part_size; // Number of parts
 
-    while (parts > 0) {
-        // Encontrar o maior elemento em cada parte
-        double max_elements[parts];
-        for (int i = 0; i < parts; i++) {
+    // Sort each part using insertion sort
+    for (int i = 0; i < num_parts; i++) {
+        int start = i * part_size;
+        int end = (i + 1) * part_size - 1;
+        if (end >= n) end = n - 1;
+        insertionSort(&arr[start], end - start + 1);
+    }
+
+    // Array to store the final sorted result
+    int *sorted = (int*)malloc(n * sizeof(int));
+    if (sorted == NULL) {
+        fprintf(stderr, "Memory allocation failed!\n");
+        exit(1);
+    }
+
+    // Place to keep track of the current index in each part
+    int *indexes = (int*)calloc(num_parts, sizeof(int));
+    if (indexes == NULL) {
+        fprintf(stderr, "Memory allocation failed!\n");
+        free(sorted);
+        exit(1);
+    }
+
+    int count = 0;
+    while (count < n) {
+        int max_value = -1;
+        int max_index = -1;
+
+        // Find the largest element among the current elements of each part
+        for (int i = 0; i < num_parts; i++) {
             int start = i * part_size;
             int end = (i + 1) * part_size - 1;
-            if (i == parts - 1 && n % part_size != 0) {
-                end = n - 1; 
-            }
-            bubbleSort(&arr[start], end - start + 1);
-            max_elements[i] = arr[end];
-        }
+            if (end >= n) end = n - 1;
 
-        // Encontrar o maior elemento dentre os max_elements
-        int max_index = 0;
-        for (int i = 1; i < parts; i++) {
-            if (max_elements[i] > max_elements[max_index]) {
-                max_index = i;
+            if (indexes[i] <= (end - start)) { // Check if index is within the current part
+                int value = arr[start + indexes[i]];
+                if (value > max_value) {
+                    max_value = value;
+                    max_index = i;
+                }
             }
         }
 
-        // Inserir o maior elemento no final do vetor e remover da parte
-        int index = max_index * part_size + part_size - 1;
-        if (index < n - 1) {
-            // Shiftar os elementos para a direita para criar espaço
-            for (int i = n - 1; i > index; i--) {
-                arr[i] = arr[i - 1];
-            }
-        }
-        arr[index] = max_elements[max_index];
-        parts--;
+        // Place the largest element in the sorted array
+        sorted[count++] = max_value;
+        indexes[max_index]++;
     }
+
+    // Copy sorted array back to the original array
+    for (int i = 0; i < n; i++) {
+        arr[i] = sorted[i];
+    }
+
+    free(sorted);
+    free(indexes);
 }
+
 
 int main() {
     clock_t start, end;
-    int sizeN = 10000000;
+    int sizeN = 100000000; // Adjusted size for practical testing
 
     int *arr = (int*)malloc(sizeN * sizeof(int));
     if (arr == NULL) {
@@ -78,10 +103,10 @@ int main() {
     sqrtsort(arr, sizeN);
     end = clock();
 
+    //printArray(arr, sizeN);
     printf("\nTime taken by program is: %.10f sec\n", (((double) end - start) / CLOCKS_PER_SEC));
 
     free(arr);
-
 
     return 0;
 }
